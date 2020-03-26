@@ -1,9 +1,10 @@
-version: "2"  
+version: "2"   
 services:  
   web:  
-    image: nginx:latest  
+    image: registry.cn-hangzhou.aliyuncs.com/fecshopsoft/nginx 
+    container_name: web_fecshop 
     ports:  
-      - "80:80" 
+      - "81:80" 
     restart: always
     volumes:  
       - ./app:/www/web
@@ -14,21 +15,38 @@ services:
     depends_on:
       - php
   mysql:  
-    image: mysql:5.7 
+    image: registry.cn-hangzhou.aliyuncs.com/fecshopsoft/mysql 
+    container_name: mysql_fecshop
+    ports:  
+      - "3307:3306"
+    restart: always
     volumes:  
       - ./db/mysql/data:/var/lib/mysql 
-      - ./db/mysql/log:/var/log/mysql
       - ./db/mysql/example_db:/var/example_db 
-      - ./fecshop-2.x-example-data:/var/example_db_2.x      
+      - ./db/mysql/conf.d:/etc/mysql/conf.d      
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=fecshopxfd3ffaads123456
+      - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_DATABASE=fecshop
     networks:
       - code-network 
+  node:
+    image: haohonglong/node:1.0
+    container_name: node_fecshop
+    ports:
+      - 4201:4200
+      - 3031:3000
+      - 3032:8080
+    volumes:
+      - ./app:/www
+    working_dir: /www
+    command: top
+    networks:
+      - code-network  
+    tty: true
   php:  
-    build: 
-      context: ./services/php/docker/
+    image: registry.cn-hangzhou.aliyuncs.com/fecshopsoft/php-7.1.13-fpm_2
+    container_name: php_fecshop
     restart: always
     volumes:  
       - ./app:/www/web
@@ -37,9 +55,25 @@ services:
       - mongodb
       - mysql
     networks:
-        - code-network  
+        - code-network
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_fecshop
+    ports:
+        - "8081:80"
+    environment:
+        - PMA_ARBITRARY=1
+        - PMA_HOST=mysql
+    restart: always
+    #volumes:
+      #- "./app/phpmyadmin:/var/www/html"
+    depends_on:
+        - mysql
+    networks:
+        - code-network
   mongodb:
-    image: mongo:3.7
+    image: registry.cn-hangzhou.aliyuncs.com/fecshopsoft/mongo
+    container_name: mongodb_fecshop
     restart: always
     environment:
       - MONGO_DATA_DIR=/data/db
@@ -52,14 +86,16 @@ services:
       - code-network 
   
   xunsearch:
-    image: hightman/xunsearch:latest
+    image: registry.cn-hangzhou.aliyuncs.com/fecshopsoft/xunsearch
+    container_name: xunsearch_fecshop
     restart: always
     volumes:
       - ./db/xunsearch/data:/usr/local/xunsearch/data  
     networks:
-      - code-network
+      - code-network 
   redis:
-    image: redis:4.0
+    image: registry.cn-hangzhou.aliyuncs.com/fecshopsoft/redis
+    container_name: redis_fecshop
     restart: always
     environment:
         REDIS_PASS_FILE: /run/secrets/redis-password
